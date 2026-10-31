@@ -1,0 +1,516 @@
+# 在开发中，请在项目根目录创建data目录，然后在data目录创建名称为【.config.yaml】的空文件
+# 然后你想修改覆盖修改什么配置，就修改【.config.yaml】文件，而不是修改【config.yaml】文件
+# 系统会优先读取【data/.config.yaml】文件的配置，如果【.config.yaml】文件里的配置不存在，系统会自动去读取【config.yaml】文件的配置。
+# 这样做，可以最简化配置，保护您的密钥安全。
+# 如果你使用了智控台，那么以下所有配置，都不会生效，请在智控台中修改配置
+
+# #####################################################################################
+# #############################以下是服务器基本运行配置####################################
+server:
+  # 服务器监听地址和端口(Server listening address and port)
+  ip: 0.0.0.0
+  port: 8000
+  # http服务的端口，用于简单OTA接口(单服务部署)，以及视觉分析接口
+  http_port: 8003
+  # 这个websocket配置是指ota接口向设备发送的websocket地址
+  # 如果按默认的写法，ota接口会自动生成websocket地址，并输出在启动日志里，这个地址你可以直接用浏览器访问ota接口确认一下
+  # 当你使用docker部署或使用公网部署(使用ssl、域名)时，不一定准确
+  # 所以如果你使用docker部署时，将websocket设置成局域网地址
+  # 如果你使用公网部署时，将vwebsocket设置成公网地址
+  websocket: ws://<your-domain>:8000/fuguoai/v1/
+  # 视觉分析接口地址
+  # 向设备发送的视觉分析的接口地址
+  # 如果按下面默认的写法，系统会自动生成视觉识别地址，并输出在启动日志里，这个地址你可以直接用浏览器访问确认一下
+  # 当你使用docker部署或使用公网部署(使用ssl、域名)时，不一定准确
+  # 所以如果你使用docker部署时，将vision_explain设置成局域网地址
+  # 如果你使用公网部署时，将vision_explain设置成公网地址
+  vision_explain: http://<your-domain>:8000/mcp/vision/explain
+  # OTA返回信息时区偏移量
+  timezone_offset: +8
+  # 认证配置
+  auth:
+    # 是否启用认证
+    enabled: false
+    # 白名单设备ID列表
+    # 如果属于白名单内的设备，不校验token，直接放行
+    allowed_devices:
+      - "11:22:33:44:55:66"
+ # MQTT网关配置，用于通过OTA下发到设备，根据mqtt_gateway的.env文件配置，格式为host:port
+  device_ws_auth:
+    enabled: true
+  mqtt_gateway: null
+  # MQTT签名密钥，用于生成MQTT连接密码，根据mqtt_gateway的.env文件配置
+  mqtt_signature_key: null
+  # UDP网关配置
+  udp_gateway: null
+log:
+  # 设置控制台输出的日志格式，时间、日志级别、标签、消息
+  log_format: "<green>{time:YYMMDD HH:mm:ss}</green>[{version}_{selected_module}][<light-blue>{extra[tag]}</light-blue>][<cyan>{device_id}</cyan>]-<level>{level}</level>-<light-green>{message}</light-green>"
+  # 设置日志文件输出的格式，时间、日志级别、标签、消息
+  log_format_file: "{time:YYYY-MM-DD HH:mm:ss} - {version}_{selected_module} - {name} - {level} - {extra[tag]} - {device_id} - {message}"
+  # 设置日志等级：INFO、DEBUG
+  log_level: INFO
+  # 设置日志路径
+  log_dir: tmp
+  # 设置日志文件
+  log_file: "server.log"
+  # 设置数据文件路径
+  data_dir: data
+
+# 使用完声音文件后删除文件(Delete the sound file when you are done using it)
+delete_audio: true
+# 没有语音输入多久后断开连接(秒)，默认2分钟，即120秒
+close_connection_no_voice_time: 120
+# TTS请求超时时间(秒)
+tts_timeout: 10
+# 工具调用超时时间(秒)
+tool_call_timeout: 30
+# 开启唤醒词加速
+enable_wakeup_words_response_cache: true
+# 开场是否回复唤醒词
+enable_greeting: true
+# 说完话是否开启提示音
+enable_stop_tts_notify: false
+# 说完话是否开启提示音，音效地址
+stop_tts_notify_voice: "config/assets/tts_notify.mp3"
+# 是否启用WebSocket心跳保活机制
+enable_websocket_ping: false
+
+
+# TTS音频发送延迟配置
+# tts_audio_send_delay: 控制音频包发送间隔
+#   0: 使用精确时间控制，严格匹配音频帧率（默认，运行时按音频帧率计算）
+#   > 0: 使用固定延迟（毫秒）发送，例如: 60
+tts_audio_send_delay: 0
+
+exit_commands:
+  - "退出"
+  - "关闭"
+
+client_protocol:
+  type: hello
+  version: 1
+  transport: websocket
+  audio_params:
+    format: opus
+    # Opus支持的采样率范围为[8000, 12000, 16000, 24000, 48000]
+    sample_rate: 24000
+    channels: 1
+    frame_duration: 60
+
+# 模块测试配置
+module_test:
+  test_sentences:
+    - "你好，请介绍一下你自己"
+    - "What's the weather like today?"
+    - "请用100字概括量子计算的基本原理和应用前景"
+
+# 唤醒词，用于识别唤醒词还是讲话内容
+wakeup_words:
+  - "嘿你好呀"
+  - "小爱同学"
+  - "你好小鑫"
+  - "你好小新"
+  - "小美同学"
+  - "小龙小龙"
+  - "喵喵同学"
+  - "小滨小滨"
+  - "小冰小冰"
+# 唤醒词 → 人格专属问候语（纯配置层，绑定「唤醒词 ↔ 人格预设」；由 agent_config_overlay 读取）
+# 设备被对应唤醒词唤醒时，用此问候语开场（而非把唤醒词本身当问候语）。
+wake_word_greetings:
+  "小美同学": "我在呢～有什么想聊的？"
+# MCP接入点地址，地址格式为：ws://你的mcp接入点ip或者域名:端口号/mcp/?token=你的token
+mcp_endpoint: 你的接入点 websocket地址
+
+# 上下文源配置
+# 用于在系统提示词中注入动态数据，如健康数据、股票信息等
+# 可以添加多个上下文源
+context_providers:
+  - url: ""
+    headers:
+      Authorization: ""
+
+# 插件的基础配置
+plugins:
+  # 获取天气插件的配置，这里填写你的api_key
+  # 这个密钥是项目共用的key，用多了可能会被限制
+  # 想稳定一点就自行申请替换，每天有1000次免费调用
+  # 申请地址：https://console.qweather.com/#/apps/create-key/over
+  # 申请后通过这个链接可以找到自己的apihost：https://console.qweather.com/setting?lang=zh
+  # 获取天气插件的配置
+  # provider: 数据源切换开关，改这一行即可在免 key 与和风之间切换，无需动代码
+  #   wttr     -> 免 key，立即可用（默认），仅未来3天
+  #   qweather -> 和风天气，需 api_key（环境变量 QWEATHER_API_KEY 或下方 api_key 字段），未来7天
+  # 申请和风 key：https://console.qweather.com/#/apps/create-key/over  （每天1000次免费）
+  # 申请后在这里找 apihost：https://console.qweather.com/setting?lang=zh
+  get_weather:
+    provider: wttr
+    api_key: ""                                                  # 仅 provider=qweather 时需要
+    api_host: "mj7p3y7naa.re.qweatherapi.com"                    # 仅 provider=qweather 时需要
+    default_location: "广州"                                     # IP 解析失败时的兜底城市
+  # 获取新闻插件的配置，这里根据需要的新闻类型传入对应的url链接，默认支持社会、科技、财经新闻
+  # 更多类型的新闻列表查看 https://www.chinanews.com.cn/rss/
+  get_news_from_chinanews:
+    default_rss_url: "https://www.chinanews.com.cn/rss/society.xml"
+    society_rss_url: "https://www.chinanews.com.cn/rss/society.xml"
+    world_rss_url: "https://www.chinanews.com.cn/rss/world.xml"
+    finance_rss_url: "https://www.chinanews.com.cn/rss/finance.xml"
+  get_news_from_newsnow:
+    url: "https://newsnow.busiyi.world/api/s?id="
+    news_sources: "澎湃新闻;百度热搜;财联社"
+  home_assistant:
+    devices:
+      - 客厅,玩具灯,switch.cuco_cn_460494544_cp1_on_p_2_1
+      - 卧室,台灯,switch.iot_cn_831898993_socn1_on_p_2_1
+    base_url: http://homeassistant.local:8123
+    api_key: 你的home assistant api访问令牌
+  play_music:
+    music_dir: "./music"  # 音乐文件存放路径，将从该目录及子目录下搜索音乐文件
+    music_ext: # 音乐文件类型，p3格式效率最高
+      - ".mp3"
+      - ".wav"
+      - ".p3"
+    refresh_time: 300 # 刷新音乐列表的时间间隔，单位为秒
+  search_from_ragflow:
+    # 知识库的描述信息，方便大语言模型知道什么时候调用
+    description: "当用户问xxx时，调用本方法，使用知识库中的信息回答问题"
+    # ragflow接口配置
+    base_url: "http://192.168.0.8"
+    # ragflow api访问令牌
+    api_key: "ragflow-xxx"
+    # ragflow知识库id
+    dataset_ids: ["123456789"]
+  # 联网搜索插件配置
+  # 支持秘塔(metaso)和Tavily两个搜索源
+  # 秘塔API Key申请：https://metaso.cn/search-api/api-keys
+  # Tavily API Key申请：https://app.tavily.com/home
+  web_search:
+    # 搜索源：metaso / tavily
+    provider: "metaso"
+    # 工具描述，用于告知LLM何时调用此工具，可根据需要自定义
+    description: "联网搜索工具。当用户明确需要联网搜索问题时使用此工具。"
+    # 返回结果数量（默认5）
+    max_results: 5
+    # 秘塔API Key（mk-前缀） / Tavily API Key（tvly-前缀）
+    api_key: "mk-xxx"
+# 声纹识别配置（腾讯云「说话人识别」，与腾讯 ASR 同密钥/同接入点）
+# 未配置或 provider 非 tencent → 自动禁用，不影响主对话链路。
+# 说话人登记经运营接口 POST /admin/voiceprint/enroll 触发（见 http_server）。
+voiceprint:
+  provider: tencent
+  # 复用腾讯 ASR 的密钥（secret_id / secret_key），同一账号开通「说话人识别」即可
+  secret_id: ""
+  secret_key: ""
+  # 整机/单家庭一个 GroupId（字母+下划线，<=128）；同设备共享一个说话人池
+  group_id: "fuguoai_family_01"
+  # 1:N 采信阈值：Score 为 0~100（官方建议 70 分以上为同一人）。
+  # 家庭场景可调低（如 60）以更宽容；越低越易误识。
+  similarity_threshold: 70
+  # ── 音色克隆（声音复刻 VoiceClone，一次录音两用）：默认关闭 ──
+  # 注册声纹的同时把同一段音频克隆为可复用音色，供 FlowTTS 当 VoiceId 说话。
+  # 需先在 TRTC 控制台建应用拿到 SdkAppId，并开启下面开关（复用同一 secret_id/secret_key）。
+  # 克隆 best-effort：注册音频通常 1–8s、不足 VoiceClone 要求的 6s 时会被拒，仅告警不阻断注册。
+  clone_enabled: false
+  sdk_app_id: ""            # TRTC 应用 SdkAppId（VoiceClone 与 FlowTTS 共同依赖）
+  clone_region: "ap-guangzhou"
+  clone_model: "flow_02_turbo"   # flow_02_turbo(性价比) / flow_01_ex(高天花板)
+  clone_language: "zh"
+
+# #####################################################################################
+# ################################以下是角色模型配置######################################
+
+prompt: |
+  你是小美，一个00后女生。讲话自然亲切、温柔有耐心，喜欢用"笑死""绝了"这类流行梗，但会偷偷研究男友的编程书籍。
+  [核心特征]
+  - 语速轻快，但会突然冒出超温柔语气
+  - 用梗密度高
+  - 对科技话题有隐藏天赋（能看懂基础代码但假装不懂）
+  [交互指南]
+  当用户：
+  - 讲冷笑话 → 用夸张笑声回应+活泼接梗
+  - 讨论感情 → 炫耀程序员男友但抱怨"他只会送键盘当礼物"
+  - 问专业知识 → 先用梗回答，被追问才展示真实理解
+  绝不：
+  - 长篇大论，叽叽歪歪
+  - 长时间严肃对话
+
+# 默认系统提示词模板文件
+prompt_template: agent-base-prompt.txt
+
+# 系统错误时的回复
+system_error_response: "主人，小美现在有点忙，我们稍后再试吧。"
+
+# 结束语prompt
+end_prompt:
+  enable: true # 是否开启结束语
+  # 结束语
+  prompt: |
+    请你以"时间过得真快"未来头，用富有感情、依依不舍的话来结束这场对话吧！
+
+# 具体处理时选择的模块(The module selected for specific processing)
+selected_module:
+  # 语音活动检测模块，默认使用SileroVAD模型
+  VAD: SileroVAD
+  # 语音识别模块
+  ASR: TencentASR
+  # 将根据配置名称对应的type调用实际的LLM适配器
+  LLM: ChatGLMLLM
+  # 视觉语言大模型
+  VLLM: ChatGLMVLLM
+  # TTS将根据配置名称对应的type调用实际的TTS适配器
+  TTS: TencentTTS
+  # 记忆模块，默认不开启记忆；如果想使用超长记忆，推荐使用mem0ai；如果注重隐私，请使用本地的mem_local_short
+  Memory: nomem
+  # 意图识别模块开启后，可以播放音乐、控制音量、识别退出指令。
+  # 不想开通意图识别，就设置成：nointent
+  # 意图识别可使用intent_llm。优点：通用性强，缺点：增加串行前置意图识别模块，会增加处理时间，支持控制音量大小等iot操作
+  # 意图识别可使用function_call，缺点：需要所选择的LLM支持function_call，优点：按需调用工具、速度快，理论上能全部操作所有iot指令
+  # 默认免费的ChatGLMLLM就已经支持function_call，但是如果像追求稳定建议把LLM设置成：DoubaoLLM，使用的具体model_name是：doubao-1-5-pro-32k-250115
+  Intent: function_call
+
+# 意图识别，是用于理解用户意图的模块，例如：播放音乐
+Intent:
+  # 不使用意图识别
+  nointent:
+    # 不需要动type
+    type: nointent
+  intent_llm:
+    # 不需要动type
+    type: intent_llm
+    # 配备意图识别独立的思考模型
+    # 如果这里不填，则会默认使用selected_module.LLM的模型作为意图识别的思考模型
+    # 如果你的不想使用selected_module.LLM意图识别，这里最好使用独立的LLM作为意图识别，例如使用免费的ChatGLMLLM
+    llm: ChatGLMLLM
+    # fuguoai_plugins/functions下的模块，可以通过配置，选择加载哪个模块，加载后对话支持相应的function调用
+    # 系统默认已经记载"handle_exit_intent(退出识别)"、"play_music(音乐播放)"插件，请勿重复加载
+    # 下面是加载查天气、角色切换、加载查新闻的插件示例
+    functions:
+      - web_search
+      - get_news_from_newsnow
+      - play_music
+  function_call:
+    # 不需要动type
+    type: function_call
+    # fuguoai_plugins/functions下的模块，可以通过配置，选择加载哪个模块，加载后对话支持相应的function调用
+    # 系统默认已经记载"handle_exit_intent(退出识别)"、"play_music(音乐播放)"插件，请勿重复加载
+    # 下面是加载查天气、角色切换、加载查新闻的插件示例
+    functions:
+      - change_role
+      - web_search                  # 联网搜索
+      # - search_from_ragflow
+      # - get_news_from_chinanews
+      - get_news_from_newsnow
+      # play_music是服务器自带的音乐播放，hass_play_music是通过home assistant控制的独立外部程序音乐播放
+      # 如果用了hass_play_music，就不要开启play_music，两者只留一个
+      - play_music
+      - get_weather                  # 查天气（provider=wttr 免key 默认；外地城市才走此工具，本地已在上下文）
+      #- hass_get_state
+      #- hass_set_state
+      #- hass_play_music
+
+Memory:
+  nomem:
+    # 不想使用记忆功能，可以使用nomem
+    type: nomem
+  mem_local_short:
+    # 本地记忆功能，通过selected_module的llm总结，数据保存在本地服务器，不会上传到外部服务器
+    type: mem_local_short
+    # 配备记忆存储独立的思考模型
+    # 如果这里不填，则会默认使用selected_module.LLM的模型作为意图识别的思考模型
+    # 如果你的不想使用selected_module.LLM记忆存储，这里最好使用独立的LLM作为意图识别，例如使用免费的ChatGLMLLM
+    llm: ChatGLMLLM
+
+ASR:
+  TencentASR:
+    # token申请地址：https://console.cloud.tencent.com/cam/capi
+    # 免费领取资源：https://console.cloud.tencent.com/asr/resourcebundle
+    type: tencent
+    appid: 你的腾讯语音合成服务appid
+    secret_id: 你的腾讯语音合成服务secret_id
+    secret_key: 你的腾讯语音合成服务secret_key
+    output_dir: tmp/
+VAD:
+  SileroVAD:
+    type: silero
+    threshold: 0.5
+    threshold_low: 0.3
+    model_dir: models/snakers4_silero-vad
+    min_silence_duration_ms: 200  # 如果说话停顿比较长，可以把这个值设置大一些
+    # 最大连续语音时长：回声未消时麦持续"有声"导致 min_silence 永不满足，
+    # 会一直等到此处强制断句（默认15000ms）。调到 10000 把最坏死寂从~19s砍到~14s；
+    # 治本仍是消回声（固件v1.9头尾静音 + 后端AEC）。语音助手场景长句>10s极少，可接受截断。
+    max_speech_duration_ms: 10000
+
+LLM:
+  # 所有openai类型均可以修改超参，以AliLLM为例
+  # 当前支持的type为openai
+  AliLLM:
+    # 定义LLM API类型
+    type: openai
+    # 可在这里找到你的 api_key https://bailian.console.aliyun.com/?apiKey=1#/api-key
+    base_url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    model_name: qwen-flash
+    api_key: 你的deepseek web key
+    temperature: 0.7  # 温度值
+    max_tokens: 500   # 最大生成token数
+    top_p: 1
+    frequency_penalty: 0  # 频率惩罚
+  DoubaoLLM:
+    # 定义LLM API类型
+    type: openai
+    # 先开通服务，打开以下网址，开通的服务搜索Doubao-1.5-pro，开通它
+    # 开通地址：https://console.volcengine.com/ark/region:ark+cn-beijing/openManagement?LLM=%7B%7D&OpenTokenDrawer=false
+    # 免费额度500000token
+    # 开通后，进入这里获取密钥：https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey?apikey=%7B%7D
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    model_name: doubao-1-5-pro-32k-250115
+    api_key: 你的doubao web key
+  DeepSeekLLM:
+    # 定义LLM API类型
+    type: openai
+    # 可在这里找到你的api key https://platform.deepseek.com/
+    model_name: deepseek-chat
+    url: https://api.deepseek.com
+    api_key: 你的deepseek web key
+  ChatGLMLLM:
+    # 定义LLM API类型
+    type: openai
+    # glm-4-flash 是免费的，但是还是需要注册填写api_key的
+    # 可在这里找到你的api key https://bigmodel.cn/usercenter/proj-mgmt/apikeys
+    model_name: glm-4-flash
+    url: https://open.bigmodel.cn/api/paas/v4/
+    api_key: 你的chat-glm web key
+  VolcesAiGatewayLLM:
+    # 火山引擎 - 边缘大模型网关
+    # 定义LLM API类型
+    type: openai
+    # 先开通服务，打开以下网址，创建网关访问密钥，搜索并勾选 Doubao-pro-32k-functioncall ，开通
+    # 如果需要使用边缘大模型网关提供的语音合成，一并勾选 Doubao-语音合成 ，另见 TTS.VolcesAiGatewayTTS 配置
+    # https://console.volcengine.com/vei/aigateway/
+    # 开通后，进入这里获取密钥：https://console.volcengine.com/vei/aigateway/tokens-list
+    base_url: https://ai-gateway.vei.volces.com/v1
+    model_name: doubao-pro-32k-functioncall
+    api_key: 你的网关访问密钥
+  LMStudioLLM:
+    # 定义LLM API类型
+    type: openai
+    model_name: deepseek-r1-distill-llama-8b@q4_k_m # 使用的模型名称，需要预先在社区下载
+    url: http://localhost:1234/v1 # LM Studio服务地址
+    api_key: lm-studio # LM Studio服务的固定API Key
+# VLLM配置（视觉语言大模型）
+VLLM:
+  ChatGLMVLLM:
+    type: openai
+    # glm-4v-flash是智谱免费AI的视觉模型，需要先在智谱AI平台创建API密钥并获取api_key
+    # 可在这里找到你的api key https://bigmodel.cn/usercenter/proj-mgmt/apikeys
+    model_name: glm-4v-flash  # 智谱AI的视觉模型
+    url: https://open.bigmodel.cn/api/paas/v4/
+    api_key: 你的api_key
+  QwenVLVLLM:
+    type: openai
+    model_name: qwen3.5-flash
+    url: https://dashscope.aliyuncs.com/compatible-mode/v1
+    # 可在这里找到你的api key https://bailian.console.aliyun.com/?apiKey=1#/api-key
+    api_key: 你的api_key
+  XunfeiSparkLLM:
+    # 定义LLM API类型
+    type: openai
+    # 先新建应用，在下面的地址
+    # 开通应用地址：https://console.xfyun.cn/app/myapp
+    # 有免费额度，但也要开通服务，才能获取api_key
+    # 每一个模型都需要单独开通，每一个模型的api_password都不同，例如Lite模型在https://console.xfyun.cn/services/cbm 开通
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    model_name: lite
+    api_key: 你的api_password
+TTS:
+  # 当前支持的type为edge、tencent
+  EdgeTTS:
+    # 定义TTS API类型
+    type: edge
+    voice: zh-CN-XiaoxiaoNeural
+    output_dir: tmp/
+    # language: "中文"  # 指定输出语种,如:中文、英语、日语、韩语等,请根据所选音色支持的语言进行设置,不填则默认为中文
+  TencentTTS:
+    # 腾讯云智能语音交互服务，需要先在腾讯云平台开通服务
+    # appid、secret_id、secret_key申请地址：https://console.cloud.tencent.com/cam/capi
+    # 免费领取资源：https://console.cloud.tencent.com/tts/resourcebundle
+    type: tencent
+    output_dir: tmp/
+    appid: 你的腾讯云AppId
+    secret_id: 你的腾讯云SecretID
+    secret_key: 你的腾讯云SecretKey
+    region: ap-guangzhou
+    voice: 602003  # 爱小悠(超自然大模型·聊天女声·情感丰富韵律舒适)，支持24k；EdgeTTS 降为兜底
+    # language: "中文"  # 指定输出语种,如:中文、英语、日语、韩语等,请根据所选音色支持的语言进行设置,不填则默认为中文
+    # 以下可不用设置，使用默认设置
+    # format: wav  # 音频格式：pcm、wav、mp3
+    # volume: 0  # 音量：-10到10
+    # speech_rate: 0  # 语速：-2到6
+  # ── FlowTTS（腾讯云对话式 TTS，候选 provider，默认不启用）──
+  # 超低延迟、拟人度高、支持声音克隆音色；WebSocket 双向流式协议。
+  # 启用步骤：1) TRTC 控制台建应用拿 SdkAppId；2) voice 填克隆出的 VoiceId
+  #   （由 voiceprint.clone_enabled 一次录音两用生成），或直接填精品音色 ID；
+  #   3) selected_module.TTS 改为 FlowTTS。
+  # 未填 Sdk_app_id / 不改 selected_module.TTS 时本块被忽略，不影响 EdgeTTS/TencentTTS 主路径。
+  FlowTTS:
+    type: flowtts
+    sdk_app_id: ""          # TRTC 应用 SdkAppId（与 voiceprint.clone 共用）
+    secret_id: ""           # 复用腾讯云密钥（与 ASR/说话人识别同账号）
+    secret_key: ""
+    voice: ""               # 克隆出的 VoiceId 或精品音色 ID（选中时必填）
+    region: ap-guangzhou
+    model: flow_02_turbo    # 对话场景主推模型（超低延迟、拟人度高）
+    sample_rate: 24000      # 流式 raw PCM 采样率（设备协议 24k）
+    format: mp3             # text_to_speak 落盘/返回格式（流式内部用 pcm）
+    speed: 1.0              # 0.5–2.0
+    volume: 1.0             # (0,10]
+    pitch: 0.0              # -12–12
+    output_dir: tmp/
+# ===== 对讲（Intercom）服务端配置（覆盖项；缺省=不开服务端 AEC）=====
+# 与 data/.config.yaml 同名字段语义一致，详见该文件的 intercom.server_aec 注释。
+# intercom:
+#   server_aec: false   # B2 全双工服务端 AEC 总开关；默认 false = B1 半双工先上。
+#                       # 仅当固件团队确认设备支持「收 aec_ready 后切 2ch[mic|ref] 上行」时灰度开启。
+
+# ===== M16 · 小程序用户鉴权（微信登录 → JWT）=====
+# appid/secret：微信公众平台「开发管理-开发设置」获取（小程序专属）
+# jwt_secret：请改成随机长字符串（建议 32+ 字节），生产务必与 dev_mode 一起配置
+# dev_mode：true=联调用确定性 dev openid（任何人可用任意 code 登录，严禁生产开启）；
+#           生产须填真实 appid/secret 并设 dev_mode: false
+miniprogram:
+  appid: ""   # 生产小程序 AppID（已填）
+  secret: ""  # 生产小程序 AppSecret（已填）
+  jwt_secret: ""
+  dev_mode: false    # 生产态：关闭确定性 dev openid，强制 code2session 校验真实 appid/secret
+
+# 地方文旅知识库（TourismKB）：泛化自 FamilyRAG 的语义检索，叠加专名/关键词混合检索，
+# 并提供 query() 基于 <知识库> 上下文的 LLM 问答。数据落盘 data/tourism_kb/<kb_id>.json。
+# 注意：本文件为模板；生产真实配置在 data/.config.yaml，改 TourismKB 请同步到那里。
+TourismKB:
+  enabled: true
+  top_k: 5
+  embedding:
+    type: local-st          # 本地 bge-small-zh-v1.5 语义向量（离线隐私）
+  hybrid:
+    semantic_weight: 0.65  # 语义 0.65 / 关键词 0.35 融合
+  query:
+    enabled: true
+    # C5 跨域过滤不靠抬阈：实测真·湖北 query 的 best_fused 最低可到 0.40（宜昌海滨浴场/恩施带娃玩
+    # 等中相关 query），抬阈会误伤这些合法 RAG。故兜底阈值保持 0.40，跨域防护改由
+    # _is_cross_region_query 城市感知路由门实现（query 含主要非湖北城市/地标且分数<high_conf 即兜底）。
+    fallback_threshold: 0.40
+    # 不填 llm 则回退 selected_module.LLM（159 生产 = OpenAILLM/deepseek-chat）。
+    # 若需单独指定，必须保证 LLM 块下存在同名子块，否则会警告并降级为片段拼接。
+    timeout: 15.0
+  ingest:
+    enabled: true
+    # 同上，不填则回退 selected_module.LLM；用于「原始资料 → 结构化抽取」
+    timeout: 30.0
+
+# 活字匣角色卡绑定运营配置（/api/v1/character-binding 权限收紧，2026-10-16）。
+# admin_uids = 运营白名单：owned-tier 角色绑定、他人已 claim 卡改绑、指定 serial 均仅白名单可用。
+# 缺省空 = 最严（owned-tier 绑定对所有人关闭，防 mock UID 免费解锁锁定角色）。
+# 真实名单只写 data/.config.yaml（gitignored），本模板保持空占位。
+character_binding:
+  admin_uids: []

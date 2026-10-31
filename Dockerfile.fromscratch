@@ -1,0 +1,49 @@
+# ==========================================================================
+# 从零构建：不依赖 159 的预构建基础镜像 fuguoai-server-base:server-base
+# （用户 2026-10-29 拍板「159 完全不碰，从零构建」）
+#
+# 系统依赖的硬依据（均回源码实测，非推测）：
+#   ffmpeg   : app.py:201 启动即调 check_ffmpeg_installed()
+#              (fuguoai_core/utils/util.py:256)，内部跑 `ffmpeg -version` 并要求
+#              输出含 "ffmpeg version"，缺失/异常即 raise ValueError → 进程起不来。
+#   libopus0 : opuslib_next(requirements.txt:8) 是 ctypes 封装，运行时 dlopen
+#              libopus.so；缺库在音频编解码路径才炸，容器必须预装。
+#
+# Python 版本依据：requirements.txt 首行注释「本项目推荐环境是 python3.10」。
+#   ⚠️ 与 159 上 server-base 实际解释器版本是否一致未实测（159 不碰），
+#      若 canary 出现依赖行为差异，优先怀疑此处。
+#
+# 构建： docker build -f Dockerfile.fromscratch -t fuguoai-canary:fromscratch .
+# ==========================================================================
+FROM python:3.10-slim
+
+ENV TZ=Asia/Shanghai \
+    PYTHONUNBUFFERED=1 \
+    PIP_INDEX_URL=https://mirrors.tencent.com/pypi/simple/ \
+    PIP_TRUSTED_HOST=mirrors.tencent.com
+
+# 腾讯云主机直连 deb.debian.org / PyPI 极慢：构建期内把 apt 源切到腾讯镜像（仅改构建期源，不固化进运行层语义）
+RUN sed -i 's|deb.debian.org|mirrors.tencent.com|g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+
+# ffmpeg = 启动强校验；libopus0 = opuslib_next 运行时；ca-certificates = HTTPS 拉取
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libopus0 \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/fuguoai-server
+
+# 先只拷 requirements 单独成层：改代码不触发 pip 重装（构建缓存）
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# 容器级健康检查：复用 /metrics 探针，覆盖「进程存活但 HTTP 不响应」的看门狗盲区
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD python -c "import urllib.request,sys; urllib.request.urlopen('http://127.0.0.1:8002/metrics', timeout=5); sys.exit(0)"
+
+CMD ["python", "app.py"]

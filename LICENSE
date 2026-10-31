@@ -1,0 +1,33 @@
+Copyright (c) 2026 fuguoai (复果AI).
+
+This repository contains two distinct copyright scopes:
+
+1. Fuguoai first-party code — the packages fuguoai_core, fuguoai_plugins,
+   fuguoai_config, and the business logic, tests, tools, and documentation
+   developed by fuguoai after the 2026-07-18 fork — is proprietary to fuguoai
+   and NOT covered by any third-party license. This includes, without limitation,
+   the fuguoai-specific subsystems (family RAG, barge-in / server-side AEC,
+   Hubei tourism KB, voice-reminder scheduler, voiceprint/dialect routing,
+   product isolation, device-profile decoupling layer, and 121+ fuguoai-owned
+   modules).
+
+2. Code originally derived from the open-source project xiaozhi-esp32-server
+   (Copyright (c) 2025 xinnan-tech, MIT License): the forked application
+   skeleton (e.g. connection.py, websocket_server.py, app.py, handle/*,
+   providers/* base classes, utils/*) and the tool-chain subsystems
+   (fuguoai_core/providers/tools/{base,device_iot,device_mcp,mcp_endpoint,
+   server_mcp,server_plugins,unified_tool_handler,unified_tool_manager};
+   fuguoai_plugins/functions/*; fuguoai_core/utils/memory.py;
+   fuguoai_config/manage_api_client.py) — has been substantially rewritten by
+   fuguoai via clean-room methodology and is now released under the fuguoai
+   first-party copyright in section 1. The original MIT copyright and permission
+   notice (see THIRD_PARTY_LICENSES.md §1) MUST still be preserved in all copies
+   or substantial portions of the Software that contain the derived baseline.
+   A verbatim copy of that license and the inventory of derived components is in
+   THIRD_PARTY_LICENSES.md.
+
+Third-party dependencies (e.g. numpy, onnxruntime, websockets, openai, mcp,
+fastembed, edge-tts) and vendored assets (the Silero VAD ONNX model under
+models/snakers4_silero-vad/) are licensed separately under their respective
+licenses and are NOT covered by the above copyrights. See
+THIRD_PARTY_LICENSES.md for the inventory.

@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  fuguoai:
+    image: fuguoai-server:latest
+    container_name: fuguoai-server
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+      - "8002:8002"
+    volumes:
+      - ./data:/opt/fuguoai-server/data
+    environment:
+      - TZ=Asia/Shanghai

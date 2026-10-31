@@ -1,0 +1,21 @@
+# 构建上下文排除项（防密钥/大文件被 COPY 烘进镜像）
+#   data/       : 含 .config.yaml 真实厂商密钥与 device_agent.db，属运行时 bind mount，
+#                 构建期必须排除（否则密钥随镜像分发，泄密面扩大）
+#   .git        : 仓库历史（含历史遗留密钥），同上
+#   *_gate.py   : 本地行为门，非运行时所需
+#   tests/ docs/ tools/ : 非运行时所需，减小镜像
+.git
+.gitignore
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+data/
+tests/
+docs/
+tools/
+cleanroom/
+*_gate.py
+*.orig-bak
+.device_agent.db
+device_agent.db

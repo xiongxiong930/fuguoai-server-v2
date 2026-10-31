@@ -1,0 +1,38 @@
+# ===== 备份残留（热修过程产生的 .bak-pNN 等） =====
+*.bak*
+
+# ===== Python 运行时 =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# ===== 测试 / 缓存 =====
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ===== 运行时数据 / 密钥（永远不进仓库，真实配置在 data/.config.yaml） =====
+# 锚定到仓根，避免误伤 models/.../silero_vad/data 等模型子目录
+/data/
+*.log
+*.pid
+*.db
+
+# ===== 密钥 / 环境变量 =====
+.env
+.env.*
+*.config.yaml
+
+# ===== 编辑器 / OS =====
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+.workbuddy/
+
+# ===== 前端构建产物（若有） =====
+node_modules/
+dist/

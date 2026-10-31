@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>复果AI · 设备管理面板</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">复果AI · 设备管理面板</div>
+    <div class="conn">
+      <input id="apiBase" placeholder="API Base，如 https://<your-domain>" size="34" />
+      <input id="token" type="password" placeholder="Token（admin 或 设备归属用户）" size="28" />
+      <button id="connectBtn">连接</button>
+      <span id="modeBadge" class="badge mode-unknown">未连接</span>
+    </div>
+  </header>
+
+  <section class="toolbar">
+    <button id="refreshBtn" disabled>刷新</button>
+    <label class="auto"><input type="checkbox" id="autoRefresh" /> 自动刷新(15s)</label>
+    <input id="search" placeholder="搜索 device_id / 昵称 / 归属用户" size="30" disabled />
+    <span id="summary" class="summary"></span>
+    <span id="connState" class="conn-state">●</span>
+  </section>
+
+  <main>
+    <table id="devTable">
+      <thead>
+        <tr>
+          <th>状态</th><th>设备ID</th><th>昵称</th><th>绑定状态</th>
+          <th>归属用户</th><th>最近活跃</th><th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="devBody"></tbody>
+    </table>
+    <div id="empty" class="empty">未连接或未发现设备。</div>
+  </main>
+
+  <!-- 详情抽屉 -->
+  <div id="drawer" class="drawer hidden">
+    <div class="drawer-head">
+      <span id="drawerTitle">设备详情</span>
+      <button id="drawerClose">✕</button>
+    </div>
+    <div class="drawer-tabs">
+      <button class="tab active" data-tab="overview">概览</button>
+      <button class="tab" data-tab="usage">用量</button>
+      <button class="tab" data-tab="memory">记忆</button>
+      <button class="tab" data-tab="reminders">留言</button>
+      <button class="tab" data-tab="events">事件</button>
+    </div>
+    <div class="drawer-body">
+      <div id="tab-overview" class="tab-pane active"></div>
+      <div id="tab-usage" class="tab-pane"></div>
+      <div id="tab-memory" class="tab-pane"></div>
+      <div id="tab-reminders" class="tab-pane"></div>
+      <div id="tab-events" class="tab-pane">
+        <div id="eventLog" class="event-log"></div>
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <button id="actCmd">发指令</button>
+      <button id="actIntercom">触发对讲</button>
+      <button id="actUnbind" class="danger">解绑</button>
+    </div>
+  </div>
+  <div id="overlay" class="overlay hidden"></div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
