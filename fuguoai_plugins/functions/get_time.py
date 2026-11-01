@@ -1,7 +1,10 @@
-"""农历 / 黄历查询插件（复果自有实现）。
+"""农历 / 黄历查询插件（复果自有实现，clean-room 重写）。
 
 对外注册函数名 "get_lunar"，返回给 LLM 的文本包含农历日期、干支、
 生肖八字、节气、宜忌等黄历信息。结果按日缓存，避免重复计算。
+
+实现说明：黄历字段清单以"字段表"形式声明（标签 + 取值函数），
+与 cnlunar 库的取值接口一一对应；响应文本由字段表统一渲染。
 """
 
 from datetime import datetime, timedelta, timezone
@@ -48,82 +51,127 @@ get_lunar_function_desc = {
 }
 
 
-def _build_lunar_text(lunar, query: str) -> str:
-    """把 cnlunar 的计算结果拼成给 LLM 的文本。"""
-    officer = lunar.get_today12DayOfficer()
-    holidays = ",".join(
-        filter(
-            None,
-            (
-                lunar.get_legalHolidays(),
-                lunar.get_otherHolidays(),
-                lunar.get_otherLunarHolidays(),
-            ),
-        )
+def _holidays_text(lunar) -> str:
+    """法定节日 + 其它节日 + 其它农历节日，逗号拼接（空段过滤）。"""
+    parts = (
+        lunar.get_legalHolidays(),
+        lunar.get_otherHolidays(),
+        lunar.get_otherLunarHolidays(),
     )
-    solar_terms = ", ".join(
-        f"{term}({month}月{day}日)"
-        for term, (month, day) in lunar.thisYearSolarTermsDic.items()
-    )
-    eight_chars = " ".join(
-        [lunar.year8Char, lunar.month8Char, lunar.day8Char, lunar.twohour8Char]
-    )
+    return ",".join(x for x in parts if x)
 
-    lines = [
-        f"根据以下信息回应用户的查询请求，并提供与{query}相关的信息：",
-        "农历信息：",
-        f"{lunar.lunarYearCn}年{lunar.lunarMonthCn[:-1]}{lunar.lunarDayCn}",
-        f"干支: {lunar.year8Char}年 {lunar.month8Char}月 {lunar.day8Char}日",
-        f"生肖: 属{lunar.chineseYearZodiac}",
-        f"八字: {eight_chars}",
-        f"今日节日: {holidays}",
-        f"今日节气: {lunar.todaySolarTerms}",
-        f"下一节气: {lunar.nextSolarTerm} {lunar.nextSolarTermYear}年"
-        f"{lunar.nextSolarTermDate[0]}月{lunar.nextSolarTermDate[1]}日",
-        f"今年节气表: {solar_terms}",
-        f"生肖冲煞: {lunar.chineseZodiacClash}",
-        f"星座: {lunar.starZodiac}",
-        f"纳音: {lunar.get_nayin()}",
-        f"彭祖百忌: {lunar.get_pengTaboo(delimit=', ')}",
-        f"值日: {officer[0]}执位",
-        f"值神: {officer[1]}({officer[2]})",
-        f"廿八宿: {lunar.get_the28Stars()}",
-        f"吉神方位: {' '.join(lunar.get_luckyGodsDirection())}",
-        f"今日胎神: {lunar.get_fetalGod()}",
-        f"宜: {'、'.join(lunar.goodThing[:10])}",
-        f"忌: {'、'.join(lunar.badThing[:10])}",
-        "(默认返回干支年和农历日期；仅在要求查询宜忌信息时才返回本日宜忌)",
-    ]
+
+def _solar_terms_text(lunar) -> str:
+    """全年节气表：`节气名(M月D日)`，逗号+空格拼接。"""
+    items = []
+    for term, md in lunar.thisYearSolarTermsDic.items():
+        items.append(f"{term}({md[0]}月{md[1]}日)")
+    return ", ".join(items)
+
+
+def _eight_chars_text(lunar) -> str:
+    """四柱八字：年柱 月柱 日柱 时柱，空格拼接。"""
+    pillars = (lunar.year8Char, lunar.month8Char, lunar.day8Char, lunar.twohour8Char)
+    return " ".join(pillars)
+
+
+def _officer_text(lunar) -> str:
+    """值日 / 值神（十二值神只取一次，避免重复调用）。"""
+    officer = lunar.get_today12DayOfficer()
+    return f"值日: {officer[0]}执位\n值神: {officer[1]}({officer[2]})"
+
+
+# 黄历字段表：(渲染标签, 取值函数)。顺序即响应文本行序。
+_LUNAR_FIELDS = (
+    ("农历日期", lambda L: f"{L.lunarYearCn}年{L.lunarMonthCn[:-1]}{L.lunarDayCn}"),
+    ("干支", lambda L: f"{L.year8Char}年 {L.month8Char}月 {L.day8Char}日"),
+    ("生肖", lambda L: f"属{L.chineseYearZodiac}"),
+    ("八字", _eight_chars_text),
+    ("今日节日", _holidays_text),
+    ("今日节气", lambda L: f"{L.todaySolarTerms}"),
+    ("下一节气", lambda L: (
+        f"{L.nextSolarTerm} {L.nextSolarTermYear}年"
+        f"{L.nextSolarTermDate[0]}月{L.nextSolarTermDate[1]}日"
+    )),
+    ("今年节气表", _solar_terms_text),
+    ("生肖冲煞", lambda L: f"{L.chineseZodiacClash}"),
+    ("星座", lambda L: f"{L.starZodiac}"),
+    ("纳音", lambda L: f"{L.get_nayin()}"),
+    ("彭祖百忌", lambda L: f"{L.get_pengTaboo(delimit=', ')}"),
+    ("值日/值神", _officer_text),
+    ("廿八宿", lambda L: f"{L.get_the28Stars()}"),
+    ("吉神方位", lambda L: f"{' '.join(L.get_luckyGodsDirection())}"),
+    ("今日胎神", lambda L: f"{L.get_fetalGod()}"),
+    ("宜", lambda L: f"{'、'.join(L.goodThing[:10])}"),
+    ("忌", lambda L: f"{'、'.join(L.badThing[:10])}"),
+)
+
+_RESPONSE_PREAMBLE = (
+    "根据以下信息回应用户的查询请求，并提供与{query}相关的信息：",
+    "农历信息：",
+)
+_RESPONSE_POSTAMBLE = (
+    "(默认返回干支年和农历日期；仅在要求查询宜忌信息时才返回本日宜忌)",
+)
+
+
+def _render_lunar_response(lunar, query: str) -> str:
+    """按字段表把 cnlunar 计算结果渲染成给 LLM 的文本。"""
+    lines = [seg.format(query=query) for seg in _RESPONSE_PREAMBLE]
+    for label, fetch in _LUNAR_FIELDS:
+        value = fetch(lunar)
+        if label == "农历日期":
+            # 首行无标签，直接是"X年X月X日"形态
+            lines.append(value)
+        elif label == "值日/值神":
+            # 两行字段，已自带"值日:/值神:"前缀
+            lines.append(value)
+        else:
+            lines.append(f"{label}: {value}")
+    lines.extend(_RESPONSE_POSTAMBLE)
     return "\n".join(lines)
+
+
+def _parse_date_or_none(date):
+    """把 YYYY-MM-DD 解析为 naive datetime；格式非法返回 None。
+
+    ⚠️ 只捕 ValueError：与重写前版本异常面逐字节一致
+    （非字符串 date 的 TypeError 同样向上抛，不在此收敛）。
+    """
+    try:
+        return datetime.strptime(date, _DATE_FORMAT)
+    except ValueError:
+        return None
 
 
 @register_function("get_lunar", get_lunar_function_desc, ToolType.WAIT)
 def get_lunar(date=None, query=None):
-    """查询指定日期（默认今天）的农历与黄历信息。"""
+    """查询指定日期（默认今天，北京时区）的农历与黄历信息。"""
     from fuguoai_core.utils.cache.manager import CacheType, cache_manager
 
     if date:
-        try:
-            now = datetime.strptime(date, _DATE_FORMAT)
-        except ValueError:
+        parsed = _parse_date_or_none(date)
+        if parsed is None:
             return ActionResponse(
                 Action.REQLLM,
                 "日期格式错误，请使用YYYY-MM-DD格式，例如：2024-01-01",
                 None,
             )
+        now = parsed
     else:
         now = datetime.now(_BEIJING_TZ)
 
-    current_date = now.strftime(_DATE_FORMAT)
     if query is None:
         query = _DEFAULT_QUERY
 
-    cache_key = f"lunar_info_{current_date}"
+    day = now.strftime(_DATE_FORMAT)
+    cache_key = f"lunar_info_{day}"
     cached = cache_manager.get(CacheType.LUNAR, cache_key)
     if cached:
         return ActionResponse(Action.REQLLM, cached, None)
 
-    response_text = _build_lunar_text(cnlunar.Lunar(now, godType="8char"), query)
+    lunar = cnlunar.Lunar(now, godType="8char")
+    response_text = _render_lunar_response(lunar, query)
     cache_manager.set(CacheType.LUNAR, cache_key, response_text)
 
     return ActionResponse(Action.REQLLM, response_text, None)
