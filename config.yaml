@@ -533,3 +533,17 @@ BrandKB:
   rel_gap: 0.0
   embedding:
     type: local-st          # 与 FamilyRAG 同款本地 bge-small-zh-v1.5 语义向量（离线隐私）
+
+# 合规层（Compliance，#146 示范）：儿童模式 / 录音不出域 / 物理静音配合 / 数据加密标记。
+# 审计日志（data/compliance.db, audit_log 表）始终开启，不随 enabled 关闭；
+# enabled 只门控"下列开关是否生效"。tenant_id 维度已预留（审计/决策均接受 tenant_id），
+# 但 device→tenant 映射未接，多租户分权为后续接入点。生产真实配置在 data/.config.yaml。
+# secret：AES-256-GCM 字段加密密钥（空=不启用字段加密，仅用 encrypted_at_rest 纯标记）；
+#         生产建议用强随机串，或设环境变量 FUGUOAI_COMPLIANCE_SECRET。
+Compliance:
+  enabled: false            # 总开关：关闭时下列开关均不生效（审计仍记录）
+  child_mode_enabled: false       # 儿童模式：内容安全过滤
+  recording_no_egress: false      # 录音不出域：任何外发接口须拦截 recording 类审计/数据
+  physical_mute_enforced: false   # 物理静音配合：合规要求硬件静音键可用
+  encrypt_at_rest: false          # 数据加密标记总开关：敏感字段落库加密
+  secret: ""                      # 字段加密密钥（或环境变量 FUGUOAI_COMPLIANCE_SECRET）

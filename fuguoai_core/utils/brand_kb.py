@@ -3,9 +3,16 @@
 轻量、离线、零外部依赖的品牌/产品/门店知识库，与 TourismKB(文旅) / FamilyRAG(家庭) 解耦：
 
 - 单分区（复果品牌域，无地域 / 跨域概念），**不套用文旅问答 persona**，不做跨域过滤；
-- 存储单元 doc：``{id,title,text,category,tags,vec,emb_type,ts,weight}``；
+- 存储单元 doc：``{id,title,text,category,tags,vec,emb_type,ts,weight,status,reviewer,review_note,review_ts,tenant_id}``；
   ``category=core`` 的条目每轮注入 ``<brand_knowledge>`` 块（第一档：保底常驻），
   全部条目可被 ``search_brand_kb`` 工具按需检索（第二档：长尾按需查）；
+- **内容审核流（#144）**：doc 拥有 ``status`` 生命周期 ``draft → published | rejected``，
+  只有 ``status=published`` 才进检索 / core 注入链路；``draft``（待审）/ ``rejected``（已拒）
+  不对外生效，直到经审核 API 置为 ``published``（向后兼容：无 status 字段的旧条目按 published 处理）。
+- **多租户隔离（#145，示范轴）**：doc 带 ``tenant_id``（默认 ``default`` 单租户），
+  检索 / core 注入 / 管理 API 均按 ``tenant_id`` 隔离；跨租户一律不可见。
+  既有条目无 ``tenant_id`` 字段 → 按 ``default`` 处理（向后兼容，现有部署零变更）。
+  设备对话路径的 tenant 解析（device → tenant 映射）为后续接入点，当前默认 ``default``。
 - 复用 FamilyRAG 的检索范式（可插拔 embedding / 向量自动迁移 / 余弦 top-k / 原子写 / 内存缓存 + 锁外落盘）。
 """
 
@@ -27,6 +34,10 @@ TAG = __name__
 logger = setup_logging()
 
 _CATEGORIES = {"core", "longtail", "other"}
+# 内容审核流状态机：draft(待审) → published(已发布,进链路) | rejected(已拒,不进链路)
+_STATUS = {"draft", "published", "rejected"}
+# 多租户隔离（#145）：默认单租户；既有条目无 tenant_id 字段按 default 处理
+_DEFAULT_TENANT = "default"
 
 
 class BrandKB:
@@ -123,8 +134,14 @@ class BrandKB:
         return data
 
     # ---- 录入 ----
-    def add_doc(self, title, text, category="longtail", tags=None):
-        """录入/覆盖一条品牌知识。相同 (title,text) 视为同一条（sha1 同 id）覆盖更新。"""
+    def add_doc(self, title, text, category="longtail", tags=None, status="published",
+                reviewer=None, review_note=None, tenant_id=_DEFAULT_TENANT):
+        """录入/覆盖一条品牌知识。相同 (title,text) 视为同一条（sha1 同 id）覆盖更新。
+
+        status: ``draft``(待审) / ``published``(已发布,默认) / ``rejected``(已拒)。
+        检索与 core 注入仅取 ``published``；``draft`` / ``rejected`` 不进链路，直到经审核
+        API 置为 ``published``。tenant_id 默认 ``default``（单租户）；多租户部署时按租户隔离。
+        """
         if not self.enabled:
             return None
         title = (title or "").strip()
@@ -146,10 +163,14 @@ class BrandKB:
             tags = [t.strip() for t in tags.split(",") if t.strip()]
         if not isinstance(tags, list):
             tags = []
+        st = status if status in _STATUS else "published"
         doc = {
             "id": did, "title": title, "text": text, "category": cat,
             "tags": tags[:8], "vec": vec, "emb_type": self._emb_type,
             "ts": time.time(), "weight": 1.0,
+            "status": st, "reviewer": reviewer, "review_note": review_note,
+            "review_ts": time.time() if reviewer else None,
+            "tenant_id": tenant_id or _DEFAULT_TENANT,
         }
         with self._lock:
             data = self._get_mem()
@@ -177,7 +198,7 @@ class BrandKB:
             return 0.0
         return float(np.dot(a, b) / (na * nb))
 
-    def retrieve(self, query, top_k=None):
+    def retrieve(self, query, top_k=None, tenant_id=_DEFAULT_TENANT):
         if not self.enabled or not query:
             return []
         try:
@@ -192,6 +213,12 @@ class BrandKB:
             return []
         scored = []
         for d in docs:
+            # 多租户隔离（#145）：跨租户不可见（无 tenant_id 字段的旧条目按 default 处理）
+            if (d.get("tenant_id") or _DEFAULT_TENANT) != (tenant_id or _DEFAULT_TENANT):
+                continue
+            # 审核流：仅 published 进入检索链路（draft/rejected 不对外生效）
+            if d.get("status", "published") != "published":
+                continue
             v = d.get("vec")
             if not v or d.get("emb_type") != self._emb_type:
                 continue
@@ -214,11 +241,16 @@ class BrandKB:
         return out
 
     # ---- 第一档：core 块渲染（注入动态 system）----
-    def render_core(self):
+    def render_core(self, tenant_id=_DEFAULT_TENANT):
         if not self.enabled:
             return ""
         data = self._get_mem()
-        docs = [d for d in data.get("docs", []) if d.get("category") == "core"]
+        docs = [
+            d for d in data.get("docs", [])
+            if d.get("category") == "core"
+            and d.get("status", "published") == "published"
+            and (d.get("tenant_id") or _DEFAULT_TENANT) == (tenant_id or _DEFAULT_TENANT)
+        ]
         if not docs:
             return ""
         blocks = [
@@ -229,26 +261,96 @@ class BrandKB:
             return ""
         return "【复果品牌知识（核心）】\n" + "\n".join(blocks)
 
-    # ---- 管理 API ----
-    def list_docs(self):
+    # ---- 管理 / 审核 API ----
+    def list_docs(self, status_filter=None, tenant_id=None):
+        """列出条目。tenant_id=None 表示跨租户全量（管理视图）；否则按租户过滤。"""
         data = self._get_mem()
-        return [
-            {
+        out = []
+        for d in data.get("docs", []):
+            st = d.get("status", "published")
+            if status_filter and st != status_filter:
+                continue
+            if tenant_id is not None and (d.get("tenant_id") or _DEFAULT_TENANT) != tenant_id:
+                continue
+            out.append({
                 "id": d.get("id"), "title": d.get("title"), "text": d.get("text"),
                 "category": d.get("category"), "tags": d.get("tags"), "ts": d.get("ts"),
-            }
-            for d in data.get("docs", [])
-        ]
+                "status": st, "reviewer": d.get("reviewer"),
+                "review_note": d.get("review_note"), "review_ts": d.get("review_ts"),
+                "tenant_id": d.get("tenant_id") or _DEFAULT_TENANT,
+            })
+        return out
+
+    def get_doc(self, doc_id, tenant_id=None):
+        """取单条。tenant_id=None 表示跨租户（按 id 直取）；否则限定租户。"""
+        data = self._get_mem()
+        for d in data.get("docs", []):
+            if d.get("id") == doc_id:
+                if tenant_id is not None and (d.get("tenant_id") or _DEFAULT_TENANT) != tenant_id:
+                    return None
+                return d
+        return None
+
+    def set_status(self, doc_id, status, reviewer=None, note=None, tenant_id=None):
+        """审核动作：在 ``draft`` / ``published`` / ``rejected`` 之间切换，并记录审核人 / 意见 / 时间。
+
+        返回更新后的 doc；``doc_id`` 不存在（或限定租户下不匹配）返回 ``None``；
+        ``status`` 非法抛 ``ValueError``。tenant_id=None 表示跨租户（按 id 直取）。
+        """
+        if status not in _STATUS:
+            raise ValueError(f"invalid status: {status}")
+        with self._lock:
+            data = self._get_mem()
+            docs = data.setdefault("docs", [])
+            for i, d in enumerate(docs):
+                if d.get("id") == doc_id:
+                    if tenant_id is not None and (d.get("tenant_id") or _DEFAULT_TENANT) != tenant_id:
+                        return None
+                    d = dict(d)
+                    d["status"] = status
+                    d["reviewer"] = reviewer
+                    d["review_note"] = note
+                    d["review_ts"] = time.time()
+                    docs[i] = d
+                    with self._io_lock:
+                        snapshot = copy.deepcopy(data)
+                        self._save(snapshot)
+                        self._mem["brand"] = data
+                    return d
+        return None
 
 
 _brand_kb = None
 _brand_kb_lock = threading.Lock()
 
 
+def _global_config():
+    """从全局配置单例取配置（懒导入，避免顶层循环依赖；与 get_tourism_kb 同范式）。"""
+    try:
+        from fuguoai_core.utils.config_holder import get_config
+        return get_config() or {}
+    except Exception:
+        return {}
+
+
 def get_brand_kb(config=None):
+    """进程级单例；支持运行时热更新 enabled 开关（与 get_tourism_kb 同范式）。
+
+    调用方不传 config 时回退全局配置单例（config_holder.get_config），
+    避免「首个调用者是 HTTP 路由（无 config）导致单例以 disabled 建实例」的坑——
+    那样会让 core 注入 / search_brand_kb 工具在 159 上整个失效。
+    """
     global _brand_kb
     if _brand_kb is None:
         with _brand_kb_lock:
             if _brand_kb is None:
-                _brand_kb = BrandKB(config or {})
+                cfg = config if isinstance(config, dict) else _global_config()
+                _brand_kb = BrandKB(cfg)
+    elif isinstance(config, dict):
+        # 热更新 enabled 开关与检索参数（reload / 每连接同步）
+        bkb_cfg = (config.get("BrandKB", {}) or {})
+        _brand_kb.enabled = bool(bkb_cfg.get("enabled", False))
+        _brand_kb.top_k = int(bkb_cfg.get("top_k", _brand_kb.top_k))
+        _brand_kb.min_score = float(bkb_cfg.get("min_score", _brand_kb.min_score) or _brand_kb.min_score)
+        _brand_kb.rel_gap = float(bkb_cfg.get("rel_gap", _brand_kb.rel_gap) or _brand_kb.rel_gap)
     return _brand_kb
