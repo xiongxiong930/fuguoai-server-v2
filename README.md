@@ -116,7 +116,7 @@ bash run_tests.sh            # 自动发现并运行 tests/test_*.py 全部用�
 
 本项目在演进过程中复用了若干开源组件的能力，相关**第三方许可与版权归属**统一记录在 [`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md) 中，**请务必保留**，这是合规要求而非项目说明。
 
-应用源码相对上游 xiaozhi-esp32-server 已完成 clean-room 解耦（2026-11-01 收口：122 文件逐一判据、真派生 X=0、59 行为门全绿），证据链与复现方式见 [`UPSTREAM_DECOUPLING.md`](UPSTREAM_DECOUPLING.md)、`docs/clean-room-methodology.md`、`docs/similarity-audit.md`、`docs/behavior-gate.md`。
+应用源码相对上游 xiaozhi-esp32-server 已完成 clean-room 解耦（2026-11-01 收口：122 文件逐一判据、真派生 X=0、60 行为门全绿），证据链与复现方式见 [`UPSTREAM_DECOUPLING.md`](UPSTREAM_DECOUPLING.md)、`docs/clean-room-methodology.md`、`docs/similarity-audit.md`、`docs/behavior-gate.md`。复现相似度扫描需自行获取上游对照快照（不入 git，获取方式见 UPSTREAM_DECOUPLING.md §2）。
 
 如需了解本项目的独立演进脉络，另见 [`RELEASE.md`](RELEASE.md)。
 

@@ -13,7 +13,7 @@
 | 真派生（X，未处理） | **0**——唯一 ≥0.40 漏网 `get_time.py`（0.417）已于 2026-11-01 clean-room 重写至 **0.327** | similarity-audit §8.1 + `audit/get_time_gate.py` 21 断言 |
 | 行为等价 | **60 门 aggregate PASS=1272 FAIL=0**，全部 exit 0 | `audit/_run_all_gates.py`（Python 3.11） |
 | 运行时代码残留 | `fuguoai_core/ fuguoai_plugins/ fuguoai_config/ app.py websocket_server.py connection.py` 中 **xiaozhi / xinnan / MIT License 字面量为零** | grep 终检 2026-11-01 |
-| 相似度分布 | 122 件 LOGIC 均值 0.455；<0.40 达标 63 件；≥0.40 的 59 件全部有 R/F/C·门证判据 | `tools/scan_derivation_v2.py` 实跑 |
+| 相似度分布 | 122 件 LOGIC 均值 0.455；<0.40 达标 63 件；≥0.40 的 59 件全部有 R/F/C·门证判据。**注意：均值 0.455 ≠「平均 45.5% 相似」——高值源于契约锁定/结构地板/门证背书，无真派生文件（X=0）** | `tools/scan_derivation_v2.py` 实跑 |
 | git 历史 | v2 仓为干净历史起点（首提交即摆脱旧仓完整派生历史）；旧仓仅本地备份、不再对外 | 本仓 `git log` |
 
 ## 2. 复现方式
@@ -43,7 +43,7 @@ ln -s ../upstream/main/xiaozhi-server ../main/xiaozhi-server
 | 底座镜像 lineage（`server-base` 为 xiaozhi OSS 换皮底座） | Docker 镜像层 | 已在 `THIRD_PARTY_LICENSES.md` 如实披露；彻底重建基础镜像属部署域工程，待排期 |
 | 旧仓（fuguoai-server @ phase5）git 历史含派生历史 | 旧仓 | 仅本地备份、不对外发布；如需彻底清除须 `git filter-repo`（破坏性，需显式授权） |
 | MIT 归属声明 | 许可文件 | **保留**（合规要求）：`LICENSE` 第 2 段 + `THIRD_PARTY_LICENSES.md` §1；性质为"历史渊源归属"，不覆盖现行自有代码 |
-| GitHub 公开发布 | 发布 | 待建仓；发布前自检清单见 `docs/clean-room-methodology.md` §发布前自检 |
+| GitHub 公开发布 | 发布 | **已发布**（2026-11-01）：https://github.com/xiongxiong930/fuguoai-server-v2 ；公开前自检（密钥/大文件/公网 IP/文档一致性）已执行，历史含 IP 打码重写 |
 
 ## 4. 判据速查
 
@@ -54,3 +54,12 @@ ln -s ../upstream/main/xiaozhi-server ../main/xiaozhi-server
 - **N 复果自有**：上游无同路径文件（scan 按基名匹配的假阳性，逐一同路径核验排除）。
 
 > 铁律：相似度数字只能排序、不能定性；`LOGIC=1.000` 可能是 0 行空文件 / 导出壳 / ABC 契约地板，≠ 逐字抄。
+
+---
+
+## 结论性声明
+
+**截至 2026-11-01，本仓应用源码层已彻底解耦**：122 个上游同名文件逐一判据、真派生 X=0、
+60 个行为门全绿（PASS=1272）、运行时无上游命名残留。剩余事项（底座镜像 lineage 重建、
+旧仓 git 历史清理）属**部署域/历史域工程，不影响应用源码层的独立性主张**。许可与归属
+披露见根目录 `LICENSE` 与 `THIRD_PARTY_LICENSES.md`。
