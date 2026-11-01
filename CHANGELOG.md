@@ -1,7 +1,31 @@
 # 复果 AI 后端 CHANGELOG（自研 / self-evolved）
 
 > 本项目为**独立演进**代码库，采用复果自有版本体系与发版节奏。
-> 完整历史见 `git log`（共 120 commits，最新 `c349ac7`）。本文件为主要里程碑摘要。
+> 本仓为 2026-10 重建的干净历史仓（此前沿革归并为初始提交）；更早的逐 commit
+> 历史随旧仓封存，里程碑以本文件为准。版本号唯一事实源：`fuguoai_config/logger.py`
+> 的 `SERVER_VERSION`，与 `git tag`（`v1.2.0` 起）对应。
+
+## Unreleased
+
+> `v1.2.0`（2026-10-18）之后、随干净历史仓收口的一批改动。均为审计/文档/测试
+> 域，无运行时行为变更（get_time 重写为行为逐字节等价），故不进位版本。
+
+### 脱 MIT 证据链收口（2026-10-29 ~ 11-01）
+- 122 个上游同名文件全量判据映射（C/R/F/N/X），零未定性残留；结果见
+  `docs/similarity-audit.md` 与 `UPSTREAM_DECOUPLING.md`。
+- 行为门扩至 **60 门全绿（aggregate PASS=1272, FAIL=0）**，新增：
+  `audit/get_time_gate.py`（21 断言）、`audit/sendAudioHandle_gate.py`（23 断言，
+  含 MQTT 16 字节头完整包字节级交叉认证）。
+- `fuguoai_plugins/functions/get_time.py` clean-room 重写：唯一相似度 ≥0.40 的
+  漏网件（LOGIC 0.417 → 0.327），schema 契约与响应文本逐字节不变。
+
+### v3.0 线协议与方法论文档
+- 新增 `docs/V3.0_DEVICE_LINE_PROTOCOL.md`（线协议契约）与 clean-room 方法论底稿
+  `docs/clean-room-methodology.md`。
+
+### 修复
+- `UnifiedToolHandler`：补 `finish_init` 属性与 `current_support_functions` 方法，
+  消除每次会话初始化时的 ERROR 日志（非致命，此前待查项）。
 
 ## v1.2.0 — 日程同步 id 命名空间修订 + once 清理闭环 + admin/cards（2026-10-18）
 

@@ -2,7 +2,7 @@
 
 复果AI（FuguoAI）是面向家庭陪伴设备的**本地化 AI 对话服务端**：以低延迟全双工语音链路为核心，整合 ASR / LLM / TTS / VAD 等能力抽象，并内置设备管理、对讲中继、声纹识别、主动提醒、家庭知识库等自有业务模块。本仓库承载服务端全部逻辑与运维工具。
 
-> 项目标识：`fuguoai-server` · 当前版本 `0.9.5`（首个正式 release `1.0.0` 过渡期，见 [RELEASE.md](RELEASE.md)）。
+> 项目标识：`fuguoai-server` · 当前版本 `1.2.0`（tag `v1.2.0`，版本沿革与发版规范见 [RELEASE.md](RELEASE.md) 与 [CHANGELOG.md](CHANGELOG.md)）。
 
 ---
 

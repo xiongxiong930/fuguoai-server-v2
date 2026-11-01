@@ -13,6 +13,9 @@
   - `MINOR`：向后兼容的新功能/新模块（如新增对讲模式、设备面板）
   - `PATCH`：修复/优化/依赖安全升级，向后兼容
 - **当前稳定基线**：`1.2.0`（tag `v1.2.0`；`SERVER_VERSION` 已进位 `1.2.0`）。
+- **tag 沿革**：本仓为干净历史重建仓，`v1.0.0` / `v1.0.1` / `v1.1.0` 历史 tag 随旧仓
+  （`fuguoai-server`）封存不迁；本仓现行 tag 自 `v1.2.0` 起，与 `SERVER_VERSION` 及
+  `CHANGELOG.md` 一一对应。
 - **运行时版本源**：`fuguoai_config/logger.py` 的 `SERVER_VERSION`（设备/运维展示、日志头）。发版时同步更新。
 - **tag 规则**：`v<MAJOR.MINOR.PATCH>`（替代旧日期 tag 如 `v20260725`）。tag 附注发版日期与一句话摘要。
 
