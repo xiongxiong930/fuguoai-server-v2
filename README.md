@@ -129,3 +129,13 @@ bash run_tests.sh            # 自动发现并运行 tests/test_*.py 全部用�
 - `UPSTREAM_DECOUPLING.md` — 上游残留清理清单
 - `tools/PHASE5_PLAN.md` — 当前阶段研发计划
 - `tools/similarity_report.md` — 自演化度量报告（基线=本仓 fork 起点）
+
+---
+
+## 8. 致谢
+
+本项目起步于 [xiaozhi-esp32-server](https://github.com/xinnan-tech/xiaozhi-esp32-server)
+（作者 **xinnan-tech**）的 fork——在语音链路架构、协议设计与工程思路上深受其启发。
+应用源码现已完成 clean-room 重写（逐文件证据链见 [`UPSTREAM_DECOUPLING.md`](UPSTREAM_DECOUPLING.md)），
+上游的 MIT 版权与许可声明依规保留于 [`LICENSE`](LICENSE) 与
+[`THIRD_PARTY_LICENSES.md`](THIRD_PARTY_LICENSES.md)。特此致谢上游团队的出色工作。
