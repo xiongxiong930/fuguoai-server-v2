@@ -38,6 +38,8 @@ class UnifiedToolHandler:
         self._endpoint_ex = MCPEndpointExecutor(conn)
         self.config = conn.config
         self.ready = False
+        # 初始化完成标志（与 ready 同源，供 IoT/MCP 调用方查询工具就绪状态）。
+        self.finish_init = False
 
         # 按来源类型把执行器一次性注册进同一管理器。
         for kind, ex in [
@@ -58,6 +60,10 @@ class UnifiedToolHandler:
         names = self.tool_manager.get_supported_tool_names()
         self.logger.info(f"已装载函数: {names}")
         return names
+
+    def current_support_functions(self) -> List[str]:
+        """返回当前支持的函数名称列表（供 IoT / MCP 调用方查询工具可用性）。"""
+        return self.tool_manager.get_supported_tool_names()
 
     def upload_functions_desc(self):
         """刷新函数描述列表。"""
@@ -98,6 +104,7 @@ class UnifiedToolHandler:
             self._setup_hass()
 
             self.ready = True
+            self.finish_init = True
             self.logger.debug("tool handler ready")
             self.list_functions()
         except Exception as exc:
