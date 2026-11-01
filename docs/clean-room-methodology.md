@@ -109,7 +109,7 @@
 | `tools/similarity_report.py` | 整体重叠率 + 内容级归一化相似度（剥 `fuguoai_` 前缀后配对上游） | 仅度量，不定性 |
 | `tools/contract_floor.py` | 剥掉锁定契约部分后重算 `LOGIC-LOCK`，证 floor 不可达 | 需人工指定锁定集 |
 
-- **上游对照快照是硬依赖**：`scan_derivation*.py` 默认读 `_reference_snapshot/main/xiaozhi-server`；缺失时从本仓 fork 起点 git 历史重建（`8f051a8` 等）。**2026-11-01 状态：快照已恢复**（v2 仓自带 `_reference_snapshot/main/xiaozhi-server` @ bd981aa，OLD 仓父目录对应路径软链至此）⇒ `tools/scan_derivation_v2.py`（v2 权威版）与全部行为门均可在此仓独立实跑。本次已实跑复核：相似度扫描 122 同名文件全比对（exit 0）+ 122 文件逐一判据映射（X=0），59 门 aggregate `PASS=1249 FAIL=0` —— 该层结论现为 `[硬·实测]`，非台账背书。
+- **上游对照快照是硬依赖**：`scan_derivation*.py` 默认读 `_reference_snapshot/main/xiaozhi-server`；缺失时从本仓 fork 起点 git 历史重建（`8f051a8` 等）。**2026-11-01 状态：快照已恢复**（v2 仓自带 `_reference_snapshot/main/xiaozhi-server` @ bd981aa，OLD 仓父目录对应路径软链至此）⇒ `tools/scan_derivation_v2.py`（v2 权威版）与全部行为门均可在此仓独立实跑。本次已实跑复核：相似度扫描 122 同名文件全比对（exit 0）+ 122 文件逐一判据映射（X=0），60 门 aggregate `PASS=1272 FAIL=0` —— 该层结论现为 `[硬·实测]`，非台账背书。
 - **度量口径**：canonical FULL/LOGIC（归一化空白/注释/命名前缀后比对）、AST 引用图（只关心引用结构，无效转义 SyntaxWarning 与相似度无关）。
 
 ---

@@ -69,10 +69,11 @@
 | `output_counter_gate.py` | `utils/output_counter.py`（附录二达标件） | 20/20 |
 | `test_nfc_ws_routing_evolution.py` | `handle/textMessageProcessor.py`（附录二达标件） | 19 passed |
 | `get_time_gate.py` | `plugins/functions/get_time.py`（2026-11-01 重写认证，见 similarity-audit §8.1） | 21/21 |
+| `sendAudioHandle_gate.py` | `handle/sendAudioHandle.py`（2026-11-01 补齐台账缺口 #115：tts/stt/display JSON + MQTT 16 字节头**字节级**交叉认证 + 演化防护） | 23/23 |
 
 **结构性地板 / ABC 类（无独立 N/N 门，由基类门 + 回源判定）**：`handle/textMessageHandler.py`(ABC)、`providers/memory/{base,nomem,mem_report_only}.py`、`providers/intent/{nointent,function_call}.py`、`plugins/loadplugins.py`、`handle/sendAudioHandle.py`。
 
-**汇总（2026-11-01 实跑复核 `[硬·实测]`）**：恢复上游快照后，用 `audit/_run_all_gates.py` 全量实跑 **59 门**（含 get_time_gate）——`gates run: 59`、`nonzero-exit gates: 0`、`aggregate PASS=1249 FAIL=0`，**全部 59 门 exit 0**。逐门实跑 PASS 计数（部分门以不同格式打印，未逐一摘取，见 `_run_all_gates.py` 输出日志）：mcp_endpoint 49 + server_mcp 80 + device_iot 19 + mem_local_short 119 + manage_api_client 58 + hass_plugins 61 + asr_tencent 47 + dialogue 46 + abortMessageHandler 45 + connection_registry 52 + device_mcp 29 + openai 35 + vad_silero 39 + plugins_gate 63 + plugins_functions_floor 41 + tts_utils 27 + unified_base 53 + opus_encoder 41 + vllm_openai 33 + vision_handler 33 + textMessageHandlerRegistry 28 + vllm_base 20 + asr_base 45 + config_utils 33 + dto_base_floor 13 + gc_manager 17 + helloMessageHandler 18 + llm_factory 15 + memory_factory 16 + output_counter 20 + textMessageType 16 + text_utils 30 + vad 17 + vllm_factory 15 + get_time 21 … 其余各门 FAIL=0。
+**汇总（2026-11-01 实跑复核 `[硬·实测]`）**：恢复上游快照后，用 `audit/_run_all_gates.py` 全量实跑 **60 门**（含 get_time_gate、sendAudioHandle_gate）——`gates run: 60`、`nonzero-exit gates: 0`、`aggregate PASS=1272 FAIL=0`，**全部 60 门 exit 0**。逐门实跑 PASS 计数（部分门以不同格式打印，未逐一摘取，见 `_run_all_gates.py` 输出日志）：mcp_endpoint 49 + server_mcp 80 + device_iot 19 + mem_local_short 119 + manage_api_client 58 + hass_plugins 61 + asr_tencent 47 + dialogue 46 + abortMessageHandler 45 + connection_registry 52 + device_mcp 29 + openai 35 + vad_silero 39 + plugins_gate 63 + plugins_functions_floor 41 + tts_utils 27 + unified_base 53 + opus_encoder 41 + vllm_openai 33 + vision_handler 33 + textMessageHandlerRegistry 28 + vllm_base 20 + asr_base 45 + config_utils 33 + dto_base_floor 13 + gc_manager 17 + helloMessageHandler 18 + llm_factory 15 + memory_factory 16 + output_counter 20 + textMessageType 16 + text_utils 30 + vad 17 + vllm_factory 15 + get_time 21 + sendAudioHandle 23 … 其余各门 FAIL=0。
 
 ---
 
@@ -90,18 +91,18 @@ _reference_snapshot/main/xiaozhi-server/   ← 上游 MIT 原仓 @ bd981aa
   - 行为门：`/tmp/venv311/bin/python3 audit/_run_all_gates.py`（全门聚合，期望 `gates run` = 门总数、`aggregate PASS>0 FAIL=0`、末尾 `ALL N GATES PASS`）。
     - ⚠️ 门使用 Python 3.11 特性 + 需 `requirements` 依赖，沙箱默认 `python3`=3.13 会因 `audioop` 移除而导入即崩；须用 3.11 venv（如 `/tmp/venv311`）跑。
   - 相似度（v2 权威版）：`python3 tools/scan_derivation_v2.py`（WT=v2 工作树、UP=v2 自带快照，扫描 122 个上游同名文件，输出 LOGIC/FULL，exit 0；`tools/scan_derivation.py` 为 OLD 仓历史版，ROOT 硬编码指旧仓，仅作对照）。
-- **2026-11-01 实测结果 `[硬·实测]`**：59 门 aggregate `PASS=1249 FAIL=0`；相似度扫描 122 同名文件全部比对成功（LOGIC 0.045–1.000，≥0.40 共 59 个已全部判据，见 similarity-audit §2/§8），exit 0。以上为本次重验、非台账背书。
+- **2026-11-01 实测结果 `[硬·实测]`**：60 门 aggregate `PASS=1272 FAIL=0`；相似度扫描 122 同名文件全部比对成功（LOGIC 0.045–1.000，≥0.40 共 59 个已全部判据，见 similarity-audit §2/§8），exit 0。以上为本次重验、非台账背书。
 
 ---
 
-## 5. 验证中发现的两处台账引用与实文件不符（已校正，待收口确认）
+## 5. 验证中发现的两处台账引用与实文件不符（已全部闭合）
 
 写本文档时回源核对了 `audit/*_gate.py` 实际清单（58 件），发现台账正文引用与磁盘文件名不一致：
 
 | 台账引用 | 实际文件 | 处置 |
 |---|---|---|
 | `intentHandler_gate.py`（#112） | `intent_gate.py` | 本文 §3 已按实文件 `intent_gate.py` 记录 |
-| `sendAudioHandle_gate.py`（#115） | `audit/` 下**无此文件** | 该 handler 改写由 §1 基线设计 + 回源定性覆盖；建议补 `sendAudioHandle_gate.py` 或明确归口到 `textHandle_gate.py` |
+| `sendAudioHandle_gate.py`（已于 2026-11-01 补齐，23 断言：协议 JSON + MQTT 头字节级交叉认证 + 演化防护单边断言） | `handle/sendAudioHandle.py` | 已闭合 |
 
 > 其余台账引用的门文件名（mcpMessageHandler/helloMessageHandler/logger/manage_api_client/vad/hass_plugins/server_mcp/mcp_endpoint/device_iot 等）均已在 `audit/` 实存，可一一对应。
 

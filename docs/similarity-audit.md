@@ -73,7 +73,7 @@
 | 32 | `providers/intent/function_call/function_call.py` | 0.633 | 0.236 | F | 26 行恒定返回 continue_chat 协议串（结构性地板） |
 | 33 | `handle/textHandler/abortMessageHandler.py` | 0.622 | 0.098 | F | 结构性地板（0.622），行为门认证等价（45/45） |
 | 34 | `utils/gc_manager.py` | 0.604 | 0.508 | R | 契约锁定：公开 API 被 app.py 锁定 + GC 算法骨架强制（17/17） |
-| 35 | `handle/sendAudioHandle.py` | 0.602 | 0.603 | C | 重写达标（门 #115；MQTT 16 字节头部 struct.pack 拼装，修上游 late-binding 坑） |
+| 35 | `handle/sendAudioHandle.py` | 0.602 | 0.603 | C | 重写达标（`sendAudioHandle_gate.py` 23 断言：tts/stt/display JSON + MQTT 16 字节头**字节级**交叉认证 + 演化防护；MQTT 头修复上游 late-binding 坑） |
 | 36 | `utils/dialogue.py` | 0.569 | 0.563 | C | 重写达标，四段拼装/窗口滑动压缩（46/46） |
 | 37 | `plugins/functions/call_device.py` | 0.585 | 0.626 | R | 契约锁定：设备调用 LLM 工具 schema + 指令体（41/41） |
 | 38 | `plugins/functions/hass_play_music.py` | 0.581 | 0.575 | F | 结构性地板：剥 LLM schema+imports 后仅剩 194 token 可改（门 61/61） |

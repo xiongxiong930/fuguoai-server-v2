@@ -11,7 +11,7 @@
 |---|---|---|
 | 逐文件判据 | **122/122 全集映射完成**：C·门证 / C·阈值 / R 契约锁定 / F 结构性地板 / N 复果自有 | `docs/similarity-audit.md` §3/§4/§8 |
 | 真派生（X，未处理） | **0**——唯一 ≥0.40 漏网 `get_time.py`（0.417）已于 2026-11-01 clean-room 重写至 **0.327** | similarity-audit §8.1 + `audit/get_time_gate.py` 21 断言 |
-| 行为等价 | **59 门 aggregate PASS=1249 FAIL=0**，全部 exit 0 | `audit/_run_all_gates.py`（Python 3.11） |
+| 行为等价 | **60 门 aggregate PASS=1272 FAIL=0**，全部 exit 0 | `audit/_run_all_gates.py`（Python 3.11） |
 | 运行时代码残留 | `fuguoai_core/ fuguoai_plugins/ fuguoai_config/ app.py websocket_server.py connection.py` 中 **xiaozhi / xinnan / MIT License 字面量为零** | grep 终检 2026-11-01 |
 | 相似度分布 | 122 件 LOGIC 均值 0.455；<0.40 达标 63 件；≥0.40 的 59 件全部有 R/F/C·门证判据 | `tools/scan_derivation_v2.py` 实跑 |
 | git 历史 | v2 仓为干净历史起点（首提交即摆脱旧仓完整派生历史）；旧仓仅本地备份、不再对外 | 本仓 `git log` |
@@ -20,7 +20,7 @@
 
 ```bash
 # 行为门（需 Python 3.11 + requirements；3.13 无 audioop 会导入即崩）
-python3.11 audit/_run_all_gates.py          # 期望: ALL 59 GATES PASS (FAIL=0)
+python3.11 audit/_run_all_gates.py          # 期望: ALL 60 GATES PASS (FAIL=0)
 
 # 相似度扫描（WT=本仓、UP=自带快照）
 python3 tools/scan_derivation_v2.py         # 期望: 122 个同名文件、exit 0
