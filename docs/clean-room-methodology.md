@@ -1,7 +1,7 @@
 # 复果AI 脱 MIT 方法论（clean-room methodology）
 
 > **本文性质**：fuguoai-server-v2 摆脱 `xiaozhi-esp32-server`（MIT）派生的**方法论底稿**，不是代码说明，也不是 LICENSE。
-> **配套证据（机读，已在仓内）**：主台账 `audit/EVIDENCE_LEDGER.md` · 行为门 `audit/*_gate.py` · clean-room 规格 `audit/cleanroom/*_spec.md` · 上游派生清单 `audit/THIRD_PARTY_LICENSES.md` · 上游对照快照 `audit/_reference_snapshot/`。
+> **配套证据（机读，已在仓内）**：主台账 `audit/EVIDENCE_LEDGER.md` · 行为门 `audit/*_gate.py` · clean-room 规格 `audit/cleanroom/*_spec.md` · 上游派生清单 `THIRD_PARTY_LICENSES.md`（根目录） · 上游对照快照 `audit/_reference_snapshot/`。
 > **公开版三件套**：本文 + 由台账抽取的 `docs/similarity-audit.md` + 由行为门汇总的 `docs/behavior-gate.md`。
 >
 > **为什么写这个方法论**：代码会过时，但"如何证明自己脱离了 MIT"这套判据与流程长期有效，可被任何重写 MIT 的项目复用。本文是**可验证的脱 MIT 案例**，不是"一个重写的后端"。
@@ -160,7 +160,7 @@
 
 ## 11. 现实判断（公开会不会暴露"参考了上游"）
 
-不会。已在 `audit/THIRD_PARTY_LICENSES.md` **承认参考上游设计**。公开细节只会让这句话更有说服力：
+不会。已在根目录 `THIRD_PARTY_LICENSES.md` **承认参考上游设计**。公开细节只会让这句话更有说服力：
 
 > "我承认参考了上游设计，但我用证据（逐文件 LOGIC 分 + 行为门 + provenance tag）证明我的实现是独立的。"
 
