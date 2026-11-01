@@ -35,6 +35,9 @@ htmlcov/
 .DS_Store
 Thumbs.db
 .workbuddy/
+# macOS AppleDouble 资源叉文件（会在拷贝进构建机时混入镜像/py_compile 报错）
+._*
+__MACOSX/
 
 # ===== 前端构建产物（若有） =====
 node_modules/
