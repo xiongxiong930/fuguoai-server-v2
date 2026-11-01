@@ -15,7 +15,6 @@ import signal
 import threading
 import faulthandler
 import asyncio
-from aioconsole import ainput
 
 from fuguoai_config.settings import load_config
 from fuguoai_config.logger import setup_logging
@@ -86,9 +85,17 @@ def _freeze_watchdog() -> None:
 
 
 async def _drain_stdin() -> None:
-    """消费标准输入里的回车，避免后台运行时 stdin 堆积触发 EOF 行为。"""
+    """消费标准输入里的回车，避免后台运行时 stdin 堆积触发 EOF 行为。
+
+    标准库实现（executor 包阻塞 readline，与 aioconsole.ainput 同款机制），
+    避免 GPL-3.0 组件随 requirements 进入生产镜像。stdin EOF（后台/无终端）
+    时长眠等待，不忙转、不让协程崩溃。
+    """
+    loop = asyncio.get_running_loop()
     while True:
-        await ainput()
+        line = await loop.run_in_executor(None, sys.stdin.readline)
+        if line == "":
+            await asyncio.sleep(3600)
 
 
 def _decide_auth_key(settings: dict) -> str:

@@ -29,7 +29,6 @@
 | cnlunar | MIT | 农历 |
 | PySocks | BSD | |
 | chardet | LGPL-2.1 | |
-| aioconsole | GPL-3.0-or-later | 仅开发/调试用途 |
 | markitdown | MIT | |
 | PyJWT | MIT | 鉴权 |
 | psutil | BSD-3-Clause | 监控 |
@@ -50,12 +49,18 @@ https://github.com/xinnan-tech/xiaozhi-esp32-server ）之上 fork 演进。
 MIT 归属声明（下方版权与许可文本，**合规必需、不可删**）。
 
 需特别说明：fork 起点 `8f051a8` 之后，应用层代码（`fuguoai_core` / `fuguoai_plugins` / `app.py` /
-`handle/*` / `providers/*` / `utils/*` 等）已持续重写与解耦。据 `UPSTREAM_DECOUPLING.md` 实测：
-运行时 `*.py` 源码（含注释）**已彻底无 xiaozhi 命名、全仓零命中**；复果专属（fork 后新增）模块
-**121+** 个，条件相似度 77.0%、整体重叠率 38.8%（该重叠率以"已含我们改动的 fork 起点快照"为基线，
-非纯上游，且 121 个新增模块计 0 重叠）。即**当前运行时应用代码已为 fuguoai 原生、归 fuguoai 自有
-版权（见根目录 `LICENSE`），不再适用"fork 派生骨架 受 MIT 覆盖"的定性**。下方 MIT 文本仅作历史来源
-合规归属保留，不构成对当前自有代码的许可覆盖。
+`handle/*` / `providers/*` / `utils/*` 等）已持续重写与解耦。据 `UPSTREAM_DECOUPLING.md` 与
+`docs/similarity-audit.md` 实测（`tools/scan_derivation_v2.py` 可复现）：**122 个上游同名文件已
+全量逐一定性**（判据 C/R/F/N/X，未定性 X = 0）——63 件 LOGIC < 0.40 直接达标，59 件 ≥ 0.40 全部
+具备显式判据（R 重写 / F 契约锁定 / C·门证 clean-room 重写 + 行为门交叉互认），全量 LOGIC 均值
+**0.455**；**60 个行为门全绿（aggregate PASS = 1272, FAIL = 0）**；运行时 `*.py` 源码（含注释）
+**已彻底无 xiaozhi 命名、全仓零命中**。
+
+> ⚠️ **基线口径（防断章取义）**：任何相似度数字均以"已含复果改动的 fork 起点快照"为基线、
+> **非纯上游**，且 fork 后新增模块计 0 重叠；相似度数字只能排序、不能定性（`LOGIC=1.000`
+> 可能是 0 行空文件 / 导出壳 / ABC 契约地板，≠ 逐字抄）。即**当前运行时应用代码已为 fuguoai
+> 原生、归 fuguoai 自有版权（见根目录 `LICENSE`）**。下方 MIT 文本仅作历史来源合规归属保留，
+> 不构成对当前自有代码的许可覆盖。
 
 ```
 MIT License
@@ -99,8 +104,9 @@ SOFTWARE.
 
 fork（2026-07-18）之后由 fuguoai 新增/重写的子系统**不**受上游 MIT 覆盖，归 fuguoai 专有，例如：
 家庭 RAG（本地语义检索）、任意打断（barge-in / server-side AEC）、湖北文旅知识库、B 方案语音提醒→设备日程、
-声纹/方言路由、活字匣/天使心产品隔离、设备档案解耦层（`device_profiles`）等 **121+ 个复果专属模块**
-（见 `UPSTREAM_DECOUPLING.md` 自进化度证据）。这些模块以 fuguoai 自有版权发布，可闭源、可再许可。
+声纹/方言路由、活字匣/天使心产品隔离、设备档案解耦层（`device_profiles`）等大量复果专属模块
+（逐文件判据与证据链见 `UPSTREAM_DECOUPLING.md` 与 `docs/similarity-audit.md`）。这些模块以 fuguoai
+自有版权发布，可闭源、可再许可。
 
 > 合规要点：MIT 仅要求**派生骨架**保留上述 xinnan-tech 版权与许可声明；fuguoai 自有新增代码的
 > 版权与许可由 fuguoai 独立主张（见根目录 `LICENSE`）。两端署名互不覆盖。
@@ -109,6 +115,9 @@ fork（2026-07-18）之后由 fuguoai 新增/重写的子系统**不**受上游 
 
 - `torch` / `torchaudio`：原 sentence-transformers 栈依赖；容器卸载 torch 以避 OOM，
   embedding 改用 fastembed（ONNX）。已从 requirements 移除，避免与无 torch 运行时矛盾。
+- `aioconsole`（GPL-3.0-or-later）：曾随 requirements 进入生产镜像（`app.py._drain_stdin`
+  仅用其 `ainput` 消费 stdin）。为使 GPL 组件不入生产分发物，已改用标准库等价实现
+  （`loop.run_in_executor` 包 `sys.stdin.readline`），并自 requirements 移除（2026-11-01）。
 - `silero_vad`（官方 pip 包）：其 6.1.0 需 torch，本容器无 torch 无法 import；
   实际 VAD 由 `onnxruntime` + 自带 wrapper（`fuguoai_core/providers/vad/silero.py`）
   加载 vendored 的 `.onnx` 完成，故官方包未使用，已从 requirements 移除。
@@ -116,3 +125,12 @@ fork（2026-07-18）之后由 fuguoai 新增/重写的子系统**不**受上游 
 > 说明：本仓库的 `Dockerfile` 仅 `FROM fuguoai-server-base:server-base` + `COPY . .`，
 > 自有业务代码（`fuguoai_core` / `fuguoai_plugins` / `fuguoai_config` / `app.py`）全部在 COPY 层之上，
 > 100% 自有；基础镜像层（Python 运行时 + 重依赖）来自上游 xiaozhi-esp32-server OSS fork。
+
+## 结论性声明
+
+本仓库的运行时应用代码（`fuguoai_core` / `fuguoai_plugins` / `fuguoai_config` / `app.py` 等）
+为 **fuguoai 自有版权**，不受上游 MIT 覆盖；上游 MIT 归属仅保留于历史 fork 来源与基础镜像的
+合规披露（上文 §上游派生来源 §1–§2）。第三方组件许可按上述清单逐一对应；requirements 与
+生产镜像当前**不含任何 GPL 组件**（aioconsole 已移除，见上节）。本清单随依赖与证据链更新
+同步维护，实测口径以 `UPSTREAM_DECOUPLING.md` / `docs/similarity-audit.md` / `docs/behavior-gate.md`
+为准。

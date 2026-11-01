@@ -27,6 +27,11 @@
 - `UnifiedToolHandler`：补 `finish_init` 属性与 `current_support_functions` 方法，
   消除每次会话初始化时的 ERROR 日志（非致命，此前待查项）。
 
+### 依赖
+- 移除 `aioconsole`（GPL-3.0-or-later）：`app.py._drain_stdin` 改用标准库等价实现
+  （executor 包 `sys.stdin.readline`，EOF 长眠等待），GPL 组件不再进入生产镜像；
+  行为等价（消费 stdin 回车防堆积），60 行为门复跑全绿。
+
 ## v1.2.0 — 日程同步 id 命名空间修订 + once 清理闭环 + admin/cards（2026-10-18）
 
 > 进位 `1.1.0` → `1.2.0`。归并 159 已部署、经用户授权进版本的改动（守"先别固"，实测验证后进位）。
