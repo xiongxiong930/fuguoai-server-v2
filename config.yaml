@@ -474,14 +474,19 @@ TTS:
 #                       # 仅当固件团队确认设备支持「收 aec_ready 后切 2ch[mic|ref] 上行」时灰度开启。
 
 # ===== M16 · 小程序用户鉴权（微信登录 → JWT）=====
-# appid/secret：微信公众平台「开发管理-开发设置」获取（小程序专属）
-# jwt_secret：请改成随机长字符串（建议 32+ 字节），生产务必与 dev_mode 一起配置
+# ⚠️ 本文件会被 git 跟踪：**真实 AppID / AppSecret / jwt_secret 一律不要写在这里**
+#    （GitHub 秘密扫描会按 wx+16位hex 模式把 AppID 当密钥报警）。
+#    生产真值放 data/.config.yaml（已 gitignore），或用环境变量：
+#      FUGUOAI_WX_APPID / FUGUOAI_WX_SECRET / FUGUOAI_JWT_SECRET
+#    多小程序（天使心 + 活字匣）用 miniprogram.apps 列表：appid+secret 成对、均非空才生效；
+#    单应用回退用顶层 appid/secret（留空则只认 apps 列表与 env 兜底）。
+# jwt_secret：随机长字符串（建议 32+ 字节），生产务必与 dev_mode 一起配置
 # dev_mode：true=联调用确定性 dev openid（任何人可用任意 code 登录，严禁生产开启）；
 #           生产须填真实 appid/secret 并设 dev_mode: false
 miniprogram:
-  appid: ""   # 生产小程序 AppID（已填）
-  secret: ""  # 生产小程序 AppSecret（已填）
-  jwt_secret: ""
+  appid: ""    # 单应用回退（真值填 data/.config.yaml 或 env FUGUOAI_WX_APPID）
+  secret: ""   # 单应用回退（真值填 data/.config.yaml 或 env FUGUOAI_WX_SECRET）
+  jwt_secret: ""   # JWT 签名密钥（或 env FUGUOAI_JWT_SECRET）
   dev_mode: false    # 生产态：关闭确定性 dev openid，强制 code2session 校验真实 appid/secret
 
 # 地方文旅知识库（TourismKB）：泛化自 FamilyRAG 的语义检索，叠加专名/关键词混合检索，

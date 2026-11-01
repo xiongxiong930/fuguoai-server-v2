@@ -6,8 +6,10 @@
 - `verify_mini_program_user(request)` 即注入 `core.guards` 的验证器：从
   `Authorization: Bearer <jwt>` 解析用户，失败返回 None（守卫据此回 401）。
 - 微信登录：小程序 `wx.login()` 拿 code → 本模块 `code2session` 换 openid →
-  落库 `users` → 签发 JWT。生产需配置 `miniprogram.appid/secret`；未配置或
+  落库 `users` → 签发 JWT。生产需配置 `miniprogram.apps`（多小程序列表）或
+  `miniprogram.appid/secret`（单应用回退）；未配置或
   `dev_mode` 开启时走确定性 dev openid，便于联调（生产务必关 dev_mode）。
+  真值写在 `data/.config.yaml`（gitignore）或环境变量，**不要写进 config.yaml 模板**。
 """
 import asyncio
 import hashlib
@@ -65,21 +67,40 @@ def _miniprogram_apps(cfg: dict) -> list:
 
 
 def _miniprogram_config() -> dict:
-    """读取 config.yaml 的 miniprogram 段（5s 缓存）。"""
+    """读取 miniprogram 配置段（5s 缓存）。
+
+    优先取**合并后**的全局配置（``config.yaml`` ⊕ ``data/.config.yaml``）：
+    ``data/.config.yaml`` 是 gitignore 的生产真值（含多小程序 ``apps:`` 列表），
+    旧实现只直读 ``config.yaml`` 模板 → ``data/.config.yaml`` 的配置被忽略，
+    导致多小程序登录（天使心 + 活字匣）实际不生效，只剩模板里的单 appid 兜底。
+    合并配置不可用时回退直读模板（向后兼容）。
+
+    副作用（预期）：真值从「模板里写死 appid」迁到「data/.config.yaml 的 apps 列表」，
+    ``config.yaml`` 模板即可保持空白、不再携带生产 AppID（进 git 跟踪）。
+    """
     now = time.time()
     if _CFG_CACHE["cfg"] is not None and now - _CFG_CACHE["ts"] < 5:
         return _CFG_CACHE["cfg"] or {}
+    cfg = None
     try:
-        from fuguoai_config.config_loader import get_project_dir
-        import yaml
-        with open(get_project_dir() + "config.yaml", "r", encoding="utf-8") as f:
-            cfg = yaml.safe_load(f) or {}
-        _CFG_CACHE["cfg"] = cfg.get("miniprogram") or {}
-        _CFG_CACHE["ts"] = now
-        return _CFG_CACHE["cfg"]
+        from fuguoai_core.utils.config_holder import get_config
+        merged = get_config() or {}
+        if isinstance(merged, dict):
+            cfg = merged.get("miniprogram") or None
     except Exception as e:
-        logging.getLogger(TAG).warning(f"读取 miniprogram 配置失败: {e}")
-        return {}
+        logging.getLogger(TAG).debug(f"取合并配置失败，回退读模板: {e}")
+    if not cfg:
+        try:
+            from fuguoai_config.config_loader import get_project_dir
+            import yaml
+            with open(get_project_dir() + "config.yaml", "r", encoding="utf-8") as f:
+                cfg = (yaml.safe_load(f) or {}).get("miniprogram") or {}
+        except Exception as e:
+            logging.getLogger(TAG).warning(f"读取 miniprogram 配置失败: {e}")
+            cfg = {}
+    _CFG_CACHE["cfg"] = cfg
+    _CFG_CACHE["ts"] = now
+    return cfg
 
 
 def _jwt_secret() -> str:

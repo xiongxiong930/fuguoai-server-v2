@@ -421,7 +421,7 @@ async def handle_list_characters(request):
     registry = get_card_registry()
     # 产品隔离（2026-10-16）：
     # - 活字匣前端传 ?product=huozixia → 仅返回标了该 product 的角色。
-    # - 天使心小程序（）旧调用**不传 product**，后端默认归到
+    # - 天使心小程序（angel_heart）旧调用**不传 product**，后端默认归到
     #   angel_heart，避免把新 4 角色（huozixia）漏进天使心视图。
     # - 旧 5 角色须标 product: angel_heart；新 4 角色标 product: huozixia。
     product = request.query.get("product") or "angel_heart"
