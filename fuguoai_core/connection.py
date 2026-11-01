@@ -1329,6 +1329,12 @@ class ConnectionHandler:
             self.family_rag = get_family_rag(self.config)
         except Exception:
             self.family_rag = None
+        # 复果品牌知识库单例（brand_kb：core 每轮注入 + search_brand_kb 工具按需查，默认 disabled）
+        try:
+            from fuguoai_core.utils.brand_kb import get_brand_kb
+            self.brand_kb = get_brand_kb(self.config)
+        except Exception:
+            self.brand_kb = None
         if not hasattr(self, "_ab_bucket"):
             self._ab_bucket = "A"
         if modules.get("intent", None) is not None:
@@ -1543,6 +1549,18 @@ class ConnectionHandler:
                     if family_block:
                         memory_str = (
                             family_block + "\n" + memory_str if memory_str else family_block
+                        )
+            except Exception:
+                pass
+
+            # 复果品牌核心知识注入——core 条目每轮保底常驻（<brand_knowledge> 块）
+            try:
+                _bkb = getattr(self, "brand_kb", None)
+                if _bkb is not None:
+                    brand_block = _bkb.render_core()
+                    if brand_block:
+                        memory_str = (
+                            brand_block + "\n" + memory_str if memory_str else brand_block
                         )
             except Exception:
                 pass

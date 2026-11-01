@@ -514,3 +514,17 @@ TourismKB:
 # 真实名单只写 data/.config.yaml（gitignored），本模板保持空占位。
 character_binding:
   admin_uids: []
+
+# 复果品牌知识库（BrandKB）：离线、零外部依赖的复果自有品牌/产品/门店知识库，
+# 与 TourismKB(文旅) / FamilyRAG(家庭) 解耦——不套文旅 persona、不做跨域过滤。
+# - category=core 的条目每轮注入动态 system（<brand_knowledge> 块，第一档：保底常驻）；
+# - 全部条目可被 search_brand_kb 工具按需检索（第二档：长尾按需查）。
+# 知识条目通过 add_doc / 小程序管理页录入，内容源由运营提供（不进 git）。
+# 159 生产 data/.config.yaml 已启用（enabled: true）。
+BrandKB:
+  enabled: true
+  top_k: 3
+  min_score: 0.0
+  rel_gap: 0.0
+  embedding:
+    type: local-st          # 与 FamilyRAG 同款本地 bge-small-zh-v1.5 语义向量（离线隐私）
