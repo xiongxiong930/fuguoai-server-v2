@@ -29,6 +29,9 @@ htmlcov/
 .env.*
 *.config.yaml
 
+# ===== 脱 MIT 审计证据（本地保留、不进公开仓：含法律脱钩策略，勿误提交） =====
+/audit/
+
 # ===== 编辑器 / OS =====
 .idea/
 .vscode/
