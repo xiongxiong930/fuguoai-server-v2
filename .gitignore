@@ -21,6 +21,9 @@ htmlcov/
 *.pid
 *.db
 
+# ===== 上游审计快照（不入仓：体积大且避免把上游源码纳入本仓分发；获取方式见 UPSTREAM_DECOUPLING.md §2） =====
+/_reference_snapshot/
+
 # ===== 密钥 / 环境变量 =====
 .env
 .env.*
